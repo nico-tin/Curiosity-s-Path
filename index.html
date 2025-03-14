@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curiosity's Path</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #111133, #000010);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+            position: relative;
+        }
+
+        /* Animated Starry Background */
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        .stars span {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            box-shadow: 0 0 5px white;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.5); }
+        }
+
+        /* Glowing Mist Effect */
+        .mist {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
+            filter: blur(10px);
+            animation: mistMove 5s infinite alternate ease-in-out;
+        }
+
+        @keyframes mistMove {
+            0% { transform: translateY(-10px); opacity: 0.3; }
+            100% { transform: translateY(10px); opacity: 0.5; }
+        }
+
+        canvas {
+            background: rgba(10, 10, 30, 0.9);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0px 0px 20px rgba(0, 200, 255, 0.6);
+            z-index: 2;
+        }
+
+        #message {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 2;
+        }
+
+        #dialogue {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 3;
+        }
+
+        #winningScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            display: none;
+            z-index: 4;
+        }
+    </style>
+</head>
+<body>
+    
+    <audio autoplay loop>
+        <source src="bgmusic.mp3" type="audio/mpeg">
+    </audio>  
+    <h1>Curiosity's Path</h1>
+    <div class="stars"></div>
+    <div class="mist"></div>
+    <p id="message">Use arrow keys to move and collect all stars to gather information and win!</p>
+    <div id="dialogue"></div>
+    <div id="winningScreen">Congratulations! Your Curiosity is now satisfied!</div>
+    
+    <canvas id="gameCanvas" width="540" height="540"></canvas>
+
+    <script>
+
+const playerImg = new Image();
+playerImg.src = "astronaut.png"; // Replace with your actual image path
+
+const collectibleImg = new Image();
+collectibleImg.src = "collectible.png"; // Replace with your actual image path
+
+        function createStars(numStars) {
+            const starsContainer = document.querySelector('.stars');
+            
+            for (let i = 0; i < numStars; i++) {
+                let star = document.createElement('span');
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+
+        createStars(100); // Adjust number for more or fewer stars
+
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const gridSize = 36;
+        const player = { x: 1, y: 1};
+        const questionsAndAnswers = [
+            {
+                question: "How are you today?",
+                answer: "I’m feeling down today—bad vibes all around, like I’m teetering on the edge of a slump that could drag my whole week down. But I refuse to let it win. I’m doing my best to stay on my feet, shift my mindset, and get my thoughts in order so I can move forward with clarity. I want to take control of my moments, not just let them pass me by."
+            },
+            {
+                question: "What are you doing during semester break or SUMMER?",
+                answer: "Last February, during the semester break, I made the most of my time by joining seminars to upskill and expand my network in the industry. I participated in a hackathon focused on creating a game in the Web3 space and even traveled to Laguna for a sponsored event. Aside from that, I took care of some long-overdue tasks—like fixing my motorcycle’s registration and maintenance. Family was also a big priority; I helped out with our business and spent quality time making memories with loved ones."
+            },
+            {
+                question: "During this Pandemic and POST Pandemic how are you and your family?",
+                answer: "We were fortunate to avoid contracting the virus, but the pandemic was still an incredibly tough period for us. Financially, we had to make do with whatever we could scrape together, and mentally, it was draining. My sister was pregnant at the time, which added another layer of caution and concern. But after the pandemic, things started looking up. We launched a family business that quickly became a hit in our community, and my sisters were able to return to work and rebuild their financial stability. It was a long road, but we made it through stronger than before."
+            },
+            {
+                question: "How would you like to be learning right now? During the Post Pandemic?",
+                answer: "I thrive in a face-to-face learning setup. Online learning just doesn’t work for me—I struggle with staying focused, and it frustrates me because I feel like I’m not making the most of my time or the university’s resources. I learn best when I’m surrounded by people, engaging in real conversations, and collaborating in an environment free from distractions. That’s where I feel the most productive and motivated."
+            },
+            {
+                question: "How difficult or easy is it to use the distance learning technology?",
+                answer: "For me, it was a struggle. My attention span is short, and online classes made it even harder to stay engaged. I often found myself zoning out, wasting time, and having to spend extra hours studying on my own just to catch up. But self-study isn’t my strong suit—I learn best through meaningful discussions and interactive sessions with my teachers and classmates. The lack of physical interaction made it difficult for me to fully absorb the lessons."
+            },
+            {
+                question: "For you, What is Discrete Structures 1 subject and why is it important? What are your expectations in our subject DS1?",
+                answer: "To me, Discrete Structures 1 is a fundamental course in IT that delves into how computers process information. A computer is just a machine—it takes in data, processes it, and turns it into meaningful output. This subject is important because it helps us understand how computers work at their core—how they handle ones and zeroes, how they use logical and mathematical functions, and how they transform raw binary data into something useful. By the end of this course, I expect to have a clearer understanding of computational logic and how I can leverage it in my field."
+            },
+            {
+                question: "What for you is the Significance of Feb 25, 2025? EDSA Day?",
+                answer: "EDSA Day has long symbolized the Filipino people's triumph over tyranny. On February 25, 1986, millions united in a peaceful revolution to overthrow Ferdinand Marcos Sr., ending years of dictatorship, corruption, and human rights abuses. In 2025, its significance has shifted—not just as a remembrance of people power but as a stand against historical revisionism. President Bongbong Marcos, son of the ousted dictator, has attempted to downplay its importance by making it a special working holiday, a move seen as an effort to rewrite history and erase his father’s crimes. The 1986 revolution was fueled by corruption, electoral fraud, and human rights violations. Its legacy reminds us that democracy must be defended. Attempts to diminish its significance only prove why it must be remembered. For me, EDSA Day is more than history—it’s a call to protect truth and democracy. The fight didn’t end in 1986, and it’s up to us to keep its lessons alive."
+            }
+        ];
+        let clueIndex = 0;
+        let collected = 0;
+        let gameOver = false;
+
+        const maze = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
+            [1,0,1,1,1,1,0,1,0,1,0,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,1,0,0,0,0,1],
+            [1,0,1,0,1,1,1,0,0,1,1,1,1,0,1],
+            [1,0,1,0,1,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,0,1,0,0,0,1,0,1,0,1],
+            [1,1,1,1,0,1,0,0,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,1,1,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,1,1,0,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        const collectibles = [
+            { x: 4, y: 1 }, { x: 12, y: 2 }, { x: 8, y: 7 },
+            { x: 3, y: 4 }, { x: 10, y: 5 }, { x: 2, y: 7 },
+            { x: 3, y: 13 }
+        ];
+
+        function drawMaze() {
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    ctx.fillStyle = maze[y][x] ? "#222244" : "white";
+                    ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+                    if (maze[y][x]) {
+                        ctx.strokeStyle = "#000033";
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x * gridSize, y * gridSize, gridSize, gridSize);
+                    }
+                }
+            }
+
+            // Draw collectibles as images with shadow
+            ctx.shadowColor = "rgba(255, 255, 0, 0.5)";
+            ctx.shadowBlur = 10;
+            collectibles.forEach(({ x, y }) => {
+                ctx.drawImage(collectibleImg, x * gridSize, y * gridSize, gridSize, gridSize);
+            });
+
+            // Draw the player as an image with shadow
+            ctx.shadowColor = "rgba(0, 255, 255, 0.5)";
+            ctx.shadowBlur = 10;
+            ctx.drawImage(playerImg, player.x * gridSize, player.y * gridSize, gridSize, gridSize);
+
+            // Reset shadow
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+        }
+
+        function checkCollectibles() {
+            if (gameOver) return;
+            for (let i = 0; i < collectibles.length; i++) {
+                if (player.x === collectibles[i].x && player.y === collectibles[i].y) {
+                    const { question, answer } = questionsAndAnswers[clueIndex];
+                    document.getElementById("dialogue").innerHTML = `<strong>${question}</strong><br>${answer}`;
+                    document.getElementById("dialogue").style.display = "block";
+                    collectibles.splice(i, 1);
+                    collected++;
+                    clueIndex++;
+                    
+                    if (collected === questionsAndAnswers.length) {
+                        gameOver = true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        function movePlayer(dx, dy) {
+            if (gameOver && collected === questionsAndAnswers.length) {
+                document.getElementById("winningScreen").style.display = "flex";
+                return;
+            }
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+            if (maze[newY] && maze[newY][newX] === 0) {
+                player.x = newX;
+                player.y = newY;
+                checkCollectibles();
+                render();
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMaze();
+        }
+
+        document.addEventListener("keydown", (event) => {
+            switch (event.key) {
+                case "ArrowUp": movePlayer(0, -1); break;
+                case "ArrowDown": movePlayer(0, 1); break;
+                case "ArrowLeft": movePlayer(-1, 0); break;
+                case "ArrowRight": movePlayer(1, 0); break;
+            }
+        });
+
+        // Render the game once the images have loaded
+        playerImg.onload = () => {
+            collectibleImg.onload = render;
+        };
+    </script>
+</body>
+</html>
