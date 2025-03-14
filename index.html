@@ -107,7 +107,7 @@
 </head>
 <body>
     
-    <audio autoplay loop>
+    <audio id="bgMusic" loop>
         <source src="backgroundmusic.mp3" type="audio/mpeg">
     </audio>  
     <h1>Curiosity's Path</h1>
@@ -120,12 +120,11 @@
     <canvas id="gameCanvas" width="540" height="540"></canvas>
 
     <script>
+        const playerImg = new Image();
+        playerImg.src = "astronaut.png"; // Replace with your actual image path
 
-const playerImg = new Image();
-playerImg.src = "astronaut.png"; // Replace with your actual image path
-
-const collectibleImg = new Image();
-collectibleImg.src = "collectible.png"; // Replace with your actual image path
+        const collectibleImg = new Image();
+        collectibleImg.src = "collectible.png"; // Replace with your actual image path
 
         function createStars(numStars) {
             const starsContainer = document.querySelector('.stars');
@@ -179,6 +178,7 @@ collectibleImg.src = "collectible.png"; // Replace with your actual image path
         let clueIndex = 0;
         let collected = 0;
         let gameOver = false;
+        let audioStarted = false;
 
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -254,6 +254,10 @@ collectibleImg.src = "collectible.png"; // Replace with your actual image path
         }
 
         function movePlayer(dx, dy) {
+            if (!audioStarted) {
+                document.getElementById("bgMusic").play();
+                audioStarted = true;
+            }
             if (gameOver && collected === questionsAndAnswers.length) {
                 document.getElementById("winningScreen").style.display = "flex";
                 return;
